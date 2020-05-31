@@ -1,17 +1,8 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+import numpy as np
 
-
-##########################
-### DATASET
-##########################
-
-mnist = input_data.read_data_sets("./data/mnist", validation_size=0)
-
-
-##########################
-### SETTINGS
-##########################
+mnist = input_data.read_data_sets("../data/mnist", validation_size=0)
 
 # Hyperparameters
 learning_rate = 0.001
@@ -26,11 +17,6 @@ image_width = 28
 # Other
 print_interval = 200
 random_seed = 123
-
-
-##########################
-### GRAPH DEFINITION
-##########################
 
 g = tf.Graph()
 with g.as_default():
@@ -91,42 +77,33 @@ with g.as_default():
     # Loss & Optimizer
     ##################
     
-    loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=input_layer,
-                                                   logits=logits)
-    cost = tf.reduce_mean(loss, name='cost')
+    cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=input_layer, logits=logits)
+    cross_entropy_mean = tf.reduce_mean(cross_entropy)
+    loss=cross_entropy_mean
     optimizer = tf.train.AdamOptimizer(learning_rate)
-    train = optimizer.minimize(cost, name='train')    
+    train = optimizer.minimize(loss, name='train')   
 
     # Saver to save session for reuse
     saver = tf.train.Saver()
 
 
-# In[3]:
-
-
-import numpy as np
-
-##########################
-### TRAINING & EVALUATION
-##########################
-    
 with tf.Session(graph=g) as sess:
     sess.run(tf.global_variables_initializer())
 
     np.random.seed(random_seed) # random seed for mnist iterator
     for epoch in range(training_epochs):
-        avg_cost = 0.
+        total_loss = 0.
         total_batch = mnist.train.num_examples // batch_size
 
         for i in range(total_batch):
             batch_x, batch_y = mnist.train.next_batch(batch_size)
-            _, c = sess.run(['train', 'cost:0'], feed_dict={'inputs:0': batch_x})
+            _, c = sess.run([train, loss], feed_dict={'inputs:0': batch_x})
 
-            avg_cost += c
+            total_loss += c
 
             if not i % print_interval:
-                print("Minibatch: %03d | Cost:    %.3f" % (i + 1, c))
+                print("Minibatch: %03d | loss:    %.3f" % (i + 1, c))
 
-        print("Epoch:     %03d | AvgCost: %.3f" % (epoch + 1, avg_cost / (i + 1)))
+        print("Epoch:     %03d | Avg loss %.3f" % (epoch + 1, total_loss / (i + 1)))
     
     saver.save(sess, save_path='./autoencoder.ckpt')

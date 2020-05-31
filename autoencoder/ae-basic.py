@@ -97,10 +97,6 @@ with g.as_default():
     # Saver to save session for reuse
     saver = tf.train.Saver()
 
-
-# In[3]:
-
-
 import numpy as np
 
 ##########################
@@ -129,12 +125,6 @@ with tf.Session(graph=g) as sess:
     
     saver.save(sess, save_path='./autoencoder.ckpt')
 
-
-# In[4]:
-
-
-get_ipython().run_line_magic('matplotlib', 'inline')
-import matplotlib.pyplot as plt
 
 ##########################
 ### VISUALIZATION

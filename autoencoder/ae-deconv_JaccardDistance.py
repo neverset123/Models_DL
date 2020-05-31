@@ -1,17 +1,16 @@
-import matplotlib.pyplot as plt
-from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
-
-##########################
-### DATASET
-##########################
+from tensorflow.examples.tutorials.mnist import input_data
+import numpy as np
 
 mnist = input_data.read_data_sets("../data/mnist", validation_size=0)
 
+def jaccard_distance(prediction, labels):
+    Nominator=tf.reduce_sum(tf.minimum(prediction, labels))
+    Denominator=tf.reduce_sum(tf.maximum(prediction, labels))
+    return 1-Nominator/Denominator
 
-##########################
-### SETTINGS
-##########################
+X=tf.constant([7, 2, 3, 4, 5, 6])
+Y=tf.constant([1, 8, 9, 10, 11, 4])
 
 # Hyperparameters
 learning_rate = 0.001
@@ -26,11 +25,6 @@ image_width = 28
 # Other
 print_interval = 200
 random_seed = 123
-
-
-##########################
-### GRAPH DEFINITION
-##########################
 
 g = tf.Graph()
 with g.as_default():
@@ -91,31 +85,34 @@ with g.as_default():
     # Loss & Optimizer
     ##################
     
-    loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=input_layer,
-                                                   logits=logits)
-    cost = tf.reduce_mean(loss, name='cost')
+    #cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=input_layer, logits=logits)
+    #cross_entropy_mean = tf.reduce_mean(cross_entropy)
+    #loss=cross_entropy_mean
+    loss=jaccard_distance(input_layer, decode)
     optimizer = tf.train.AdamOptimizer(learning_rate)
-    train = optimizer.minimize(cost, name='train')    
+    train = optimizer.minimize(loss, name='train')   
 
     # Saver to save session for reuse
     saver = tf.train.Saver()
 
-##########################
-### VISUALIZATION
-##########################
-
-n_images = 15
-
-fig, axes = plt.subplots(nrows=2, ncols=n_images, sharex=True, 
-                         sharey=True, figsize=(20, 2.5))
-test_images = mnist.test.images[:n_images]
 
 with tf.Session(graph=g) as sess:
-    saver.restore(sess, save_path='./autoencoder.ckpt')
-    decoded = sess.run('decoding:0', feed_dict={'inputs:0': test_images})
+    sess.run(tf.global_variables_initializer())
 
-for i in range(n_images):
-    for ax, img in zip(axes, [test_images, decoded]):
-        ax[i].imshow(img[i].reshape((image_width, image_width)), cmap='binary')
+    np.random.seed(random_seed) # random seed for mnist iterator
+    for epoch in range(training_epochs):
+        total_loss = 0.
+        total_batch = mnist.train.num_examples // batch_size
 
-plt.show()
+        for i in range(total_batch):
+            batch_x, batch_y = mnist.train.next_batch(batch_size)
+            _, c = sess.run([train, loss], feed_dict={'inputs:0': batch_x})
+
+            total_loss += c
+
+            if not i % print_interval:
+                print("Minibatch: %03d | loss:    %.3f" % (i + 1, c))
+
+        print("Epoch:     %03d | Avg loss %.3f" % (epoch + 1, total_loss / (i + 1)))
+    
+    saver.save(sess, save_path='./autoencoder.ckpt')

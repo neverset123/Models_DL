@@ -30,7 +30,7 @@ def AlexNet_run():
     train_loss, train_acc = [], []
     valid_loss, valid_acc = [], []
     # load data
-    mnist = input_data.read_data_sets("./data/mnist", one_hot=True)
+    mnist = input_data.read_data_sets("../data/mnist", one_hot=True)
 
     #reset graph
     tf.reset_default_graph()
